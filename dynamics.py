@@ -11,8 +11,8 @@ K = CoordSysCartesian('K')
 N = 4 # NUMBER OF PIECES
 Length = 1
 mass_density = 1
-kappa = 10
-expand = False
+kappa = 1
+expand = True
 
 # LENGHT DISTRIBUTION
 np_lghs = np.linspace(0, 1, N+1)
@@ -145,8 +145,8 @@ def dz(z, t):
     return np.concatenate((dthetas, ddthetas))
 
 t = np.linspace(0,10,5000)
-init_thetas = np.ones(N)*.0
-init_thetas[1] = np.pi/4
+init_thetas = np.ones(N)*.1
+#init_thetas[1] = np.pi/4
 init_vthetas = np.ones(N)*.0
 #init_vthetas[2] = 20
 y0 = np.concatenate((init_thetas, init_vthetas))
@@ -167,8 +167,14 @@ for k in range(len(sol)):
 
 
 fig = plt.figure()
+if expand:
+    xlim = (-.5*Length, .5*Length)
+    ylim = (-Length, 0)
+else:
+    xlim = (-Length, Length)
+    ylim = (-Length, Length)
 ax = fig.add_subplot(111, autoscale_on=False,
-        xlim=(-Length, Length), ylim=(-Length, Length))
+        xlim=xlim, ylim=ylim)
 ax.grid()
 
 line, = ax.plot([], [], 'o-', lw=2)
