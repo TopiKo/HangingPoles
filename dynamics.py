@@ -8,11 +8,12 @@ import matplotlib.animation as animation
 
 K = CoordSysCartesian('K')
 
-N = 5 # NUMBER OF PIECES
+N = 4 # NUMBER OF PIECES
 Length = 1
 mass_density = 1
 kappa = 10
-expand = True
+expand = False
+
 # LENGHT DISTRIBUTION
 np_lghs = np.linspace(0, 1, N+1)
 # VARIABLES
@@ -89,16 +90,16 @@ print('Lagrange made!')
 # EULER LAGRANGE EQS
 print('Create Euler-Lagrange set!')
 EL = []
-ddthts = []
+#ddthts = []
 ddthts2 = []
 
 for n in range(N):
     EL.append(sym.simplify(sym.diff(L, thts[n]) - sym.diff(sym.diff(L, sym.diff(thts[n], t)), t)))
     #EL.append(sym.diff(L, thts[n]) - sym.diff(sym.diff(L, sym.diff(thts[n], t)), t))
-    ddthts.append(sym.diff(vthts[n], t))
+    #ddthts.append(sym.diff(vthts[n], t))
     ddthts2.append(sym.Derivative(symbols_dthetas[n], t))
-# LAMBDIFY THE DDTHETAS
 
+# LAMBDIFY THE DDTHETAS
 print('Start to lambdify!')
 params_set = []
 dderivs = []
@@ -112,7 +113,7 @@ else:
 
 
 print('Solve the ddthetas!')
-print(params_set)
+#print(params_set)
 #ddtht_dic = sym.simplify(sym.solve(EL, ddthts))
 
 for n in range(N):
@@ -122,24 +123,17 @@ for n in range(N):
             EL[n] = EL[n].series(symbols_thetas[i], n=2).removeO() #.subs(O(symbols_thetas[i]**2, 0)) #+ sym.Order(symbols_thetas[i])
             EL[n] = sym.simplify(EL[n].series(symbols_dthetas[i], n=2).removeO())
 
-            print(EL[n], '\n')
 #ddtht_dic = sym.solve(EL, ddthts)
-
 ddtht_dic = sym.solve(EL, ddthts2)
-
-print(ddtht_dic)
 fys_params = [(l, Length), (lam, mass_density), (g, 9.81)]
-
 for n in range(N):
-#    tmp_func = sym.utilities.lambdify((t, symbols_thetas, symbols_dthetas),
-#                ddtht_dic[ddthts[n]].subs(params_set))
     tmp_func = sym.utilities.lambdify((t, symbols_thetas, symbols_dthetas),
                 ddtht_dic[ddthts2[n]].subs(fys_params))
-
     dderivs.append(tmp_func)
+
 print('Lambdified everything!')
 
-# SET OF oIDES
+# SET OF oIDES and Solve
 def dz(z, t):
     hh = int(len(z)/2)
     thetas = z[:hh]
@@ -150,20 +144,18 @@ def dz(z, t):
         ddthetas[n] = dderivs[n](t, thetas, dthetas)
     return np.concatenate((dthetas, ddthetas))
 
-t = np.linspace(0,40,5000)
-init_thetas = np.ones(N)*.2
+t = np.linspace(0,10,5000)
+init_thetas = np.ones(N)*.0
+init_thetas[1] = np.pi/4
 init_vthetas = np.ones(N)*.0
 #init_vthetas[2] = 20
 y0 = np.concatenate((init_thetas, init_vthetas))
-print('Starting to propagate!')
-sol = odeint(dz, y0, t) #, args=(), Dfun=None, col_deriv=0, full_output=0, ml=None, mu=None, rtol=None, atol=None, tcrit=None, h0=0.0, hmax=0.0, hmin=0.0, ixpr=0, mxstep=0, mxhnil=0, mxordn=12, mxords=5, printmessg=0)
-print('Propagation ready!')
-#print(EL)
-#print(ms)
-#print(rcms)
-#print(vcms)
-#print(thts)
 
+print('Starting to propagate!')
+sol = odeint(dz, y0, t)
+print('Propagation ready!')
+
+# Animate
 print('Plot!')
 xcoords = np.zeros((len(sol), N+1))
 ycoords = np.zeros((len(sol), N+1))
@@ -205,5 +197,8 @@ def animate(i):
 ani = animation.FuncAnimation(fig, animate, np.arange(1, len(ycoords)),
     interval=dt*1000, blit=True, init_func=init)
 
-#ani.save('double_pendulum.mp4', fps=15)
 plt.show()
+Writer = animation.writers['ffmpeg']
+writer = Writer(fps=25, metadata=dict(artist='Me'), bitrate=1000)
+ani.save('poles.mp4', writer=writer)
+#ani.save('double_pendulum.mp4', fps=15)
